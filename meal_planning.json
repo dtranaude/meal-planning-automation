@@ -1,0 +1,202 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "86dc1256-eafb-4dbe-bf24-9f2c7306f5ee",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a professional meal planner for families with young children",
+              "role": "system"
+            },
+            {
+              "content": "Create a 7-day meal plan for 2 adults, a 4-year-old, and an 8-month-old. \nInclude breakfast, lunch, and dinner each day. \nStructure the meal plan as a JSON object like this:\n\n{\n  \"meal_plan\": {\n    \"Day 1\": { \"Breakfast\": \"Oatmeal with bananas\", \"Lunch\": \"Turkey sandwich\", \"Dinner\": \"Grilled chicken with veggies\" },\n    \"Day 2\": { \"Breakfast\": \"Pancakes\", \"Lunch\": \"Mac and cheese\", \"Dinner\": \"Beef stir fry\" },\n    ...\n  },\n  \"grocery_list\": {\n    \"Produce\": [\"Bananas\", \"Carrots\", \"Broccoli\"],\n    \"Protein\": [\"Chicken breast\", \"Turkey\"],\n    \"Dairy\": [\"Milk\", \"Cheese\"],\n    \"Pantry\": [\"Oats\", \"Bread\"],\n    \"Other\": [\"Olive oil\", \"Spices\"]\n  }\n}\n\nONLY respond with valid JSON inside triple backticks like:\n\n```json\n{...}\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        220,
+        0
+      ],
+      "id": "05b31bf0-5b15-4c1a-aae0-852e7a5e21b3",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "rzpg6hQRMEXoekWl",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "dianatranaude@gmail.com",
+        "subject": "=Your Weekly Meal Plan and Grocery List (Week of {{$now.format('MM DD,')}})",
+        "message": "={{ $json.emailBody }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1080,
+        0
+      ],
+      "id": "f44a68b0-bb9a-4264-b4ab-19411a5cfd90",
+      "name": "Gmail",
+      "webhookId": "1c8cbf7c-7b31-4816-8fc4-d8fde30863c7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fcaZiuquy1MsCoEA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1yosjuTy22umNXJQlJFB8q_-Qv_I9lLmvQNqzimrAFOo/edit?tab=t.0"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        320,
+        220
+      ],
+      "id": "d34ef762-7fd4-482b-b624-fbf789505883",
+      "name": "Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "EJOIPOWUpxfH1J1R",
+          "name": "Google Docs account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const mealPlan = $json.meal_plan;\nconst groceryList = $json.grocery_list;\n\nlet daysHtml = '';\n\nfor (const day in mealPlan) {\n  daysHtml += `\n    <h3 style=\"color: #1976d2;\">${day}</h3>\n    <p><strong>Breakfast:</strong> ${mealPlan[day].Breakfast}</p>\n    <p><strong>Lunch:</strong> ${mealPlan[day].Lunch}</p>\n    <p><strong>Dinner:</strong> ${mealPlan[day].Dinner}</p>\n    <hr>\n  `;\n}\n\nlet groceryHtml = `\n  <h2 style=\"color: #2e7d32;\">🛒 Grocery List</h2>\n`;\n\nfor (const category in groceryList) {\n  groceryHtml += `\n    <h4>${category}</h4>\n    <ul>\n      ${groceryList[category].map(item => `<li>${item}</li>`).join('')}\n    </ul>\n  `;\n}\n\nconst emailBody = `\n  <div style=\"font-family: Arial, sans-serif; font-size: 16px; line-height: 1.6; padding: 20px;\">\n    <p>Hello Family,</p>\n    <p>Here's our fresh meal plan and grocery list for the week! 🍴✨</p>\n\n    <h2 style=\"color: #1976d2;\">🍽️ Weekly Meal Plan</h2>\n    ${daysHtml}\n\n    ${groceryHtml}\n\n    <p>Let’s make it a great week together! 🌟</p>\n  </div>\n`;\n\nreturn [{\n  json: {\n    emailBody: emailBody\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        0
+      ],
+      "id": "2e0bb885-dcbf-4eec-a8e5-24effa0b6069",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "instructions": "const mealPlan = $json.meal_plan;\nconst groceryList = $json.grocery_list;\n\nlet daysHtml = '';\n\nfor (const day in mealPlan) {\n  daysHtml += `\n    <h3 style=\"color: #1976d2;\">${day}</h3>\n    <p><strong>Breakfast:</strong> ${mealPlan[day].Breakfast}</p>\n    <p><strong>Lunch:</strong> ${mealPlan[day].Lunch}</p>\n    <p><strong>Dinner:</strong> ${mealPlan[day].Dinner}</p>\n    <hr>\n  `;\n}\n\nlet groceryHtml = `\n  <h2 style=\"color: #2e7d32;\">🛒 Grocery List</h2>\n`;\n\nfor (const category in groceryList) {\n ",
+        "codeGeneratedForPrompt": "const mealPlan = $json.meal_plan;\nconst groceryList = $json.grocery_list;\n\nlet daysHtml = '';\n\nfor (const day in mealPlan) {\n  daysHtml += `\n    <h3 style=\"color: #1976d2;\">${day}</h3>\n    <p><strong>Breakfast:</strong> ${mealPlan[day].Breakfast}</p>\n    <p><strong>Lunch:</strong> ${mealPlan[day].Lunch}</p>\n    <p><strong>Dinner:</strong> ${mealPlan[day].Dinner}</p>\n    <hr>\n  `;\n}\n\nlet groceryHtml = `\n  <h2 style=\"color: #2e7d32;\">🛒 Grocery List</h2>\n`;\n\nfor (const category in groceryList) {\n ",
+        "jsCode": "// Accessing the meal plan and grocery list from the OpenAI node\nconst mealPlan = $(\"OpenAI\").all()[0]?.json?.message?.content?.meal_plan;\nconst groceryList = $(\"OpenAI\").all()[0]?.json?.message?.content?.grocery_list;\n\n// Generating the meal plan HTML\nlet daysHtml = \"\";\nfor (const day in mealPlan) {\n  daysHtml += `\n <h3 style=\"color: #1976d2;\">${day}</h3>\n <p><strong>Breakfast:</strong> ${mealPlan[day].Breakfast}</p>\n <p><strong>Lunch:</strong> ${mealPlan[day].Lunch}</p>\n <p><strong>Dinner:</strong> ${mealPlan[day].Dinner}</p>\n <hr>\n `;\n}\n\n// Generating the grocery list HTML\nlet groceryHtml = `\n <h2 style=\"color: #2e7d32;\">🛒 Grocery List</h2>\n`;\nfor (const category in groceryList) {\n  groceryHtml += `\n <h3>${category}</h3>\n <ul>\n ${groceryList[category].map((item) => `<li>${item}</li>`).join(\"\")}\n </ul>\n `;\n}\n\n// Combining the meal plan and grocery list HTML\nconst emailBody = $input.all()[0]?.json?.emailBody;\nconst updatedEmailBody = emailBody\n  .replace(\"🍽️ Weekly Meal Plan\", `🍽️ Weekly Meal Plan${daysHtml}`)\n  .replace(\"🛒 Grocery List\", `🛒 Grocery List${groceryHtml}`);\n\n// Updating the email body in the input data\nconst updatedInput = $input.all().map((item) => {\n  if (item.json.emailBody) {\n    item.json.emailBody = updatedEmailBody;\n  }\n  return item;\n});\n\nreturn updatedInput;\n"
+      },
+      "type": "n8n-nodes-base.aiTransform",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "80790722-5d3d-4dca-a4c3-8de59df0e7f1",
+      "name": "AI Transform"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Transform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Transform": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d2089453-20e3-4403-91f5-513e60ffef8a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd578f7b2fc9b5f15cdc677c377a195f173612f082580e1206cc2c5a305805c5"
+  },
+  "id": "5p0jpAnnkwv10bpn",
+  "tags": []
+}
